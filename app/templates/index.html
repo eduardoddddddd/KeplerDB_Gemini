@@ -498,44 +498,53 @@ function cargarFamoso(f){
   calcular();
 }
 
-async function listarCartas(){
-  const r = await fetch('/cartas/listar');
-  const d = await r.json();
+function listarCartas(){
+  const raw = localStorage.getItem('kepler_cartas');
+  const cartasObj = raw ? JSON.parse(raw) : {};
+  const cartas = Object.values(cartasObj).sort((a,b) => a.nombre.localeCompare(b.nombre));
+  
   const el = document.getElementById('cartas-lista');
-  if(!d.ok || !d.cartas.length){ el.textContent='Sin cartas guardadas'; return; }
-  el.innerHTML = d.cartas.map(c=>`
+  if(!cartas.length){ el.textContent='Sin cartas guardadas'; return; }
+  
+  el.innerHTML = cartas.map(c=>`
     <div style="display:flex;justify-content:space-between;align-items:center;
         padding:4px 0;border-bottom:1px solid #f0f0f0">
-      <span style="cursor:pointer;color:#1565c0" onclick="cargarCarta('${c.file}')">
+      <span style="cursor:pointer;color:#1565c0" onclick="cargarCarta('${c.nombre}')">
         📋 ${c.nombre} <span style="color:#9e9e9e;font-size:10px">${c.fecha}</span>
       </span>
-      <span style="cursor:pointer;color:#c62828;font-size:12px" onclick="borrarCarta('${c.file}')">✕</span>
+      <span style="cursor:pointer;color:#c62828;font-size:12px" onclick="borrarCarta('${c.nombre}')">✕</span>
     </div>`).join('');
+    
   // Poblar selects de sinastría
   const opts = '<option value="">— Cargar carta guardada —</option>' +
-    d.cartas.map(c=>`<option value="${c.file}">${c.nombre} (${c.fecha})</option>`).join('');
+    cartas.map(c=>`<option value="${c.nombre}">${c.nombre} (${c.fecha})</option>`).join('');
   document.getElementById('s1_carta').innerHTML = opts;
   document.getElementById('s2_carta').innerHTML = opts;
 }
 
-async function guardarCarta(){
+function guardarCarta(){
   if(!window._cartaActual) return;
-  const r = await fetch('/cartas/guardar',{
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(window._cartaActual)
-  });
-  const d = await r.json();
+  const raw = localStorage.getItem('kepler_cartas');
+  const cartas = raw ? JSON.parse(raw) : {};
+  
+  const c = window._cartaActual;
+  cartas[c.nombre] = c;
+  
+  localStorage.setItem('kepler_cartas', JSON.stringify(cartas));
+  
   const msg = document.getElementById('save-msg');
-  msg.textContent = d.ok ? '✓ Guardada: '+d.nombre : 'Error: '+d.error;
-  if(d.ok) listarCartas();
+  msg.textContent = '✓ Guardada en el navegador';
+  listarCartas();
   setTimeout(()=>msg.textContent='', 3000);
 }
 
-async function cargarCarta(nombre){
-  const r = await fetch('/cartas/cargar/'+nombre);
-  const d = await r.json();
-  if(!d.ok){ alert(d.error); return; }
-  const c = d.carta;
+function cargarCarta(nombre){
+  const raw = localStorage.getItem('kepler_cartas');
+  if(!raw) return;
+  const cartas = JSON.parse(raw);
+  const c = cartas[nombre];
+  if(!c){ alert('Carta no encontrada'); return; }
+  
   document.getElementById('nombre').value  = c.nombre||'';
   document.getElementById('dia').value     = c.dia||'';
   document.getElementById('mes').value     = c.mes||'';
@@ -550,9 +559,13 @@ async function cargarCarta(nombre){
   calcular();
 }
 
-async function borrarCarta(nombre){
+function borrarCarta(nombre){
   if(!confirm('¿Borrar carta '+nombre+'?')) return;
-  await fetch('/cartas/borrar/'+nombre,{method:'DELETE'});
+  const raw = localStorage.getItem('kepler_cartas');
+  if(!raw) return;
+  const cartas = JSON.parse(raw);
+  delete cartas[nombre];
+  localStorage.setItem('kepler_cartas', JSON.stringify(cartas));
   listarCartas();
 }
 
