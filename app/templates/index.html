@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>KeplerDB — Carta Natal</title>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#283593">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#f0f2f5;color:#212121;font-family:'Segoe UI',sans-serif;font-size:14px}
+.app{display:grid;grid-template-columns:320px 1fr;min-height:100vh}
+.sidebar{background:#fff;border-right:1px solid #e0e0e0;padding:20px;overflow-y:auto;
+  box-shadow:2px 0 8px rgba(0,0,0,.06)}
+.main{padding:20px;overflow-y:auto}
+h1{font-size:18px;color:#283593;margin-bottom:4px}
+h2{font-size:12px;color:#757575;text-transform:uppercase;letter-spacing:.06em;
+   margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid #e0e0e0}
+label{display:block;font-size:12px;color:#616161;margin-bottom:3px;margin-top:8px}
+input,select{width:100%;background:#fafafa;border:1px solid #e0e0e0;
+  color:#212121;padding:6px 8px;border-radius:6px;font-size:13px}
+input:focus,select:focus{outline:none;border-color:#3f51b5;background:#fff}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.btn{width:100%;background:#283593;color:#fff;border:none;padding:10px;
+  border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;margin-top:14px}
+.btn:hover{background:#3949ab}
+.btn:disabled{background:#bdbdbd;color:#fff;cursor:not-allowed}
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid #e0e0e0;padding-bottom:0}
+.tab{padding:8px 16px;cursor:pointer;border-radius:6px 6px 0 0;
+  font-size:13px;color:#757575;border:1px solid transparent;border-bottom:none}
+.tab.active{color:#283593;background:#fff;border-color:#e0e0e0;
+  border-bottom:2px solid #fff;margin-bottom:-2px;font-weight:600}
+.tab:hover:not(.active){color:#3949ab;background:#f5f5f5}
+.panel{display:none}.panel.active{display:block;background:#fff;
+  border:1px solid #e0e0e0;border-radius:0 6px 6px 6px;padding:16px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:#757575;font-weight:600;padding:6px 8px;
+   border-bottom:2px solid #e0e0e0;font-size:11px;text-transform:uppercase}
+td{padding:6px 8px;border-bottom:1px solid #f5f5f5}
+tr:hover td{background:#fafafa}
+.glyph{font-size:16px}
+.asp-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.retro{color:#e53935;font-size:11px;font-weight:600}
+#rueda-img{max-width:100%;border-radius:8px;display:block;margin:0 auto;
+  box-shadow:0 2px 12px rgba(0,0,0,.15)}
+#kepler-out{padding:4px}
+#error-box{background:#ffebee;border:1px solid #ef9a9a;color:#c62828;
+  padding:10px;border-radius:6px;margin-top:10px;display:none;font-size:12px;white-space:pre}
+.badge-asc{display:inline-block;background:#e8eaf6;color:#283593;
+  padding:4px 12px;border-radius:12px;font-size:12px;margin:2px;font-weight:600}
+
+/* Estilos Gemini */
+.gemini-res{background:#f3e5f5;border:1px solid #ce93d8;padding:10px;
+  border-radius:8px;margin-top:10px;animation:fadeIn 0.5s ease;
+  font-family:'Segoe UI',sans-serif;font-size:12.5px;color:#4a148c;line-height:1.5}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.loading-sparkle{animation:rotate 1.5s linear infinite;display:inline-block}
+@keyframes rotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="sidebar">
+  <h1>☉ KeplerDB</h1>
+  <div style="font-size:11px;color:#484f58;margin-bottom:12px">
+    Kepler 4 · Miguel García · 743 textos</div>
+
+  <h2>Datos natales</h2>
+  <label>Nombre</label>
+  <input id="nombre" type="text" value="Abdul Malik" />
+
+  <label>Fecha</label>
+  <div class="row3">
+    <div><label style="font-size:11px">Día</label>
+      <input id="dia" type="number" value="11" min="1" max="31"/></div>
+    <div><label style="font-size:11px">Mes</label>
+      <input id="mes" type="number" value="10" min="1" max="12"/></div>
+    <div><label style="font-size:11px">Año</label>
+      <input id="anio" type="number" value="1976" min="-5000" max="5000"/></div>
+  </div>
+
+  <label>Hora</label>
+  <div class="row2">
+    <div><label style="font-size:11px">Hora</label>
+      <input id="hora" type="number" value="20" min="0" max="23"/></div>
+    <div><label style="font-size:11px">Min</label>
+      <input id="min" type="number" value="33" min="0" max="59"/></div>
+  </div>
+
+  <label>Offset GMT</label>
+  <input id="offset" type="number" value="-1" step="0.5" min="-12" max="14"/>
+
+  <label>Latitud (+ Norte)</label>
+  <input id="lat" type="number" value="40.42" step="0.01"/>
+  <label>Longitud (+ Este)</label>
+  <input id="lon" type="number" value="-3.70" step="0.01"/>
+  <label>Lugar (referencia)</label>
+  <input id="lugar" type="text" value="Madrid, España"/>
+
+  <label>Sistema de casas</label>
+  <select id="sistema">
+    {% for s in sistemas %}
+    <option value="{{s}}" {% if s=='Placidus' %}selected{% endif %}>{{s}}</option>
+    {% endfor %}
+  </select>
+
+  <button class="btn" id="btn-calc" onclick="calcular()">⭐ Calcular Carta Natal</button>
+  <button class="btn" id="btn-guardar" onclick="guardarCarta()" style="background:#2e7d32;display:none;margin-top:6px">💾 Guardar Carta</button>
+  <div id="save-msg" style="font-size:12px;color:#2e7d32;margin-top:4px"></div>
+
+  <h2>Cartas guardadas</h2>
+  <div id="cartas-lista" style="font-size:12px;color:#9e9e9e">—</div>
+  <button onclick="listarCartas()" style="background:none;border:1px solid #e0e0e0;color:#424242;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;margin-top:6px">🔄 Actualizar</button>
+
+  <h2 style="color:#6a1b9a;border-bottom-color:#ce93d8">⭐ Famosos y Eventos</h2>
+  <div style="position:relative">
+    <input id="famosos-q" type="text" placeholder="Buscar nombre..."
+      oninput="buscarFamosos(this.value)"
+      style="width:100%;padding-right:28px"/>
+    <span style="position:absolute;right:8px;top:7px;color:#9e9e9e;font-size:13px">🔍</span>
+  </div>
+  <div id="famosos-lista" style="font-size:12px;color:#9e9e9e;margin-top:6px">
+    Escribe al menos 2 letras para buscar entre 8502 cartas.</div>
+  <div id="error-box"></div>
+</div>
+
+<div class="main">
+  <div id="placeholder" style="color:#9e9e9e;text-align:center;padding:80px 0;font-size:15px;
+      background:#fff;border-radius:8px;border:2px dashed #e0e0e0">
+    ← Introduce los datos natales y pulsa Calcular
+  </div>
+  <div id="resultado" style="display:none">
+    <div style="margin-bottom:12px">
+      <span style="font-size:18px;font-weight:700;color:#1a237e" id="res-nombre"></span>
+      <span style="color:#616161;font-size:13px;margin-left:8px" id="res-fecha"></span>
+    </div>
+    <div style="margin-bottom:14px">
+      <span class="badge-asc">ASC <span id="res-asc"></span></span>
+      <span class="badge-asc" style="background:#e8f5e9;color:#2e7d32">
+        MC <span id="res-mc"></span></span>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('tabla')">📋 Posiciones</div>
+      <div class="tab" onclick="showTab('aspectos')">⚡ Aspectos</div>
+      <div class="tab" onclick="showTab('rueda')">🔵 Rueda</div>
+      <div class="tab" onclick="showTab('kepler')">📖 Kepler</div>
+      <div class="tab" onclick="showTab('transitos')">🌍 Tránsitos</div>
+      <div class="tab" onclick="showTab('sinastria')">💞 Sinastría</div>
+      <div class="tab" onclick="showTab('rs')">☀️ Rev. Solar</div>
+    </div>
+
+    <div id="panel-tabla" class="panel active">
+      <table>
+        <thead><tr><th></th><th>Planeta</th><th>Posición</th>
+          <th>Signo</th><th>Casa</th><th></th></tr></thead>
+        <tbody id="tabla-body"></tbody>
+      </table>
+    </div>
+
+    <div id="panel-aspectos" class="panel">
+      <table>
+        <thead><tr><th>Planeta 1</th><th>Aspecto</th>
+          <th>Planeta 2</th><th>Orbe</th></tr></thead>
+        <tbody id="asp-body"></tbody>
+      </table>
+    </div>
+
+    <div id="panel-rueda" class="panel">
+      <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap">
+        <div id="svg-container" style="background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.1);padding:10px">
+          <!-- El SVG se generará aquí -->
+        </div>
+        <div style="max-width:300px">
+          <img id="rueda-img" alt="Rueda estática (Matplotlib)" style="width:100%;border:1px solid #eee;border-radius:8px"/>
+          <p style="font-size:11px;color:#9e9e9e;margin-top:8px;text-align:center">Rueda estática de respaldo</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-kepler" class="panel">
+      <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+        <button onclick="pedirResumenGemini()" 
+          style="background:linear-gradient(135deg, #4a148c, #283593);color:#fff;
+                 border:none;padding:8px 16px;border-radius:8px;cursor:pointer;
+                 font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
+          ✨ Pedir Síntesis a Gemini
+        </button>
+        <button onclick="imprimirInforme('kepler-out','Informe Kepler')"
+          style="background:#e8eaf6;color:#283593;border:1px solid #9fa8da;
+                 padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px">
+          📄 Exportar PDF
+        </button>
+      </div>
+      <div id="gemini-resumen-box" style="display:none;margin-bottom:20px"></div>
+      <div id="kepler-out"></div>
+    </div>
+
+    <div id="panel-transitos" class="panel">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;
+          background:#f8f9fa;padding:12px;border-radius:8px;margin-bottom:14px">
+        <div>
+          <label style="display:block;font-size:11px;color:#616161;margin-bottom:3px">Fecha tránsito</label>
+          <div style="display:flex;gap:6px">
+            <input id="t_dia"  type="number" value="" min="1" max="31" style="width:60px" placeholder="Día"/>
+            <input id="t_mes"  type="number" value="" min="1" max="12" style="width:60px" placeholder="Mes"/>
+            <input id="t_anio" type="number" value="" min="-5000" max="5000" style="width:80px" placeholder="Año"/>
+          </div>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;color:#616161;margin-bottom:3px">Hora UTC local</label>
+          <div style="display:flex;gap:6px">
+            <input id="t_hora" type="number" value="12" min="0" max="23" style="width:60px" placeholder="Hora"/>
+            <input id="t_min"  type="number" value="0"  min="0" max="59" style="width:60px" placeholder="Min"/>
+          </div>
+        </div>
+        <div>
+          <button onclick="calcularTransitos()"
+            style="background:#1565c0;color:#fff;border:none;padding:8px 18px;
+                   border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">
+            🔭 Calcular Tránsitos
+          </button>
+        </div>
+        <div id="trans-meta" style="font-size:11px;color:#757575;padding:4px 0"></div>
+        <button onclick="imprimirInforme('trans-out','Tránsitos')"
+          style="background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;
+                 padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px">
+          📄 PDF
+        </button>
+      </div>
+      <div id="trans-out">
+        <p style="color:#9e9e9e;font-style:italic;padding:20px 0">
+          Selecciona una fecha y pulsa Calcular Tránsitos.</p>
+      </div>
+    </div>
+
+    <div id="panel-sinastria" class="panel">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;
+          background:#f8f9fa;padding:14px;border-radius:8px;margin-bottom:14px">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#4a148c;margin-bottom:8px">👤 Persona 1</div>
+          <select id="s1_carta" onchange="cargarCartaEnSinastria('s1',this.value)"
+            style="width:100%;margin-bottom:4px;background:#e8eaf6;border:1px solid #9fa8da;
+                   color:#283593;padding:5px 8px;border-radius:6px;font-size:12px">
+            <option value="">— Cargar carta guardada —</option>
+          </select>
+          <div style="position:relative;margin-bottom:6px">
+            <input id="s1_fq" type="text" placeholder="⭐ Buscar famoso..."
+              oninput="buscarFamososSin('s1',this.value)"
+              style="width:100%;font-size:11px;padding:5px 8px;
+                     background:#fce4ec;border:1px solid #f48fb1;border-radius:6px;color:#880e4f"/>
+            <div id="s1_fdrop" style="display:none;position:absolute;z-index:50;width:100%;
+                background:#fff;border:1px solid #f48fb1;border-radius:0 0 6px 6px;
+                max-height:160px;overflow-y:auto;box-shadow:0 4px 8px rgba(0,0,0,.15)"></div>
+          </div>
+          <label style="font-size:11px;color:#616161">Nombre</label>
+          <input id="s1_nombre" type="text" style="width:100%;margin-bottom:6px"/>
+          <div style="display:flex;gap:4px;margin-bottom:4px">
+            <input id="s1_dia" type="number" placeholder="Día" style="width:50px" min="1" max="31"/>
+            <input id="s1_mes" type="number" placeholder="Mes" style="width:50px" min="1" max="12"/>
+            <input id="s1_anio" type="number" placeholder="Año" style="width:72px"/>
+          </div>
+          <div style="display:flex;gap:4px;margin-bottom:4px">
+            <input id="s1_hora" type="number" placeholder="Hora" style="width:55px" min="0" max="23"/>
+            <input id="s1_min"  type="number" placeholder="Min"  style="width:50px" min="0" max="59"/>
+            <input id="s1_offset" type="number" placeholder="GMT" style="width:55px" step="0.5"/>
+          </div>
+          <div style="display:flex;gap:4px">
+            <input id="s1_lat" type="number" placeholder="Lat" style="width:80px" step="0.01"/>
+            <input id="s1_lon" type="number" placeholder="Lon" style="width:80px" step="0.01"/>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#1a237e;margin-bottom:8px">👤 Persona 2</div>
+          <select id="s2_carta" onchange="cargarCartaEnSinastria('s2',this.value)"
+            style="width:100%;margin-bottom:4px;background:#e8eaf6;border:1px solid #9fa8da;
+                   color:#283593;padding:5px 8px;border-radius:6px;font-size:12px">
+            <option value="">— Cargar carta guardada —</option>
+          </select>
+          <div style="position:relative;margin-bottom:6px">
+            <input id="s2_fq" type="text" placeholder="⭐ Buscar famoso..."
+              oninput="buscarFamososSin('s2',this.value)"
+              style="width:100%;font-size:11px;padding:5px 8px;
+                     background:#fce4ec;border:1px solid #f48fb1;border-radius:6px;color:#880e4f"/>
+            <div id="s2_fdrop" style="display:none;position:absolute;z-index:50;width:100%;
+                background:#fff;border:1px solid #f48fb1;border-radius:0 0 6px 6px;
+                max-height:160px;overflow-y:auto;box-shadow:0 4px 8px rgba(0,0,0,.15)"></div>
+          </div>
+          <label style="font-size:11px;color:#616161">Nombre</label>
+          <input id="s2_nombre" type="text" style="width:100%;margin-bottom:6px"/>
+          <div style="display:flex;gap:4px;margin-bottom:4px">
+            <input id="s2_dia" type="number" placeholder="Día" style="width:50px" min="1" max="31"/>
+            <input id="s2_mes" type="number" placeholder="Mes" style="width:50px" min="1" max="12"/>
+            <input id="s2_anio" type="number" placeholder="Año" style="width:72px"/>
+          </div>
+          <div style="display:flex;gap:4px;margin-bottom:4px">
+            <input id="s2_hora" type="number" placeholder="Hora" style="width:55px" min="0" max="23"/>
+            <input id="s2_min"  type="number" placeholder="Min"  style="width:50px" min="0" max="59"/>
+            <input id="s2_offset" type="number" placeholder="GMT" style="width:55px" step="0.5"/>
+          </div>
+          <div style="display:flex;gap:4px">
+            <input id="s2_lat" type="number" placeholder="Lat" style="width:80px" step="0.01"/>
+            <input id="s2_lon" type="number" placeholder="Lon" style="width:80px" step="0.01"/>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+        <label style="font-size:12px;color:#616161">Orbe</label>
+        <input id="s_orbe" type="number" value="6" min="1" max="10" style="width:55px"/>
+        <button onclick="cargarNatalEnSinastria()"
+          style="background:#e8eaf6;color:#283593;border:1px solid #9fa8da;
+                 padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px">
+          📋 Cargar carta natal → P1
+        </button>
+        <button onclick="calcularSinastria()"
+          style="background:#4a148c;color:#fff;border:none;
+                 padding:8px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">
+          💞 Calcular Sinastría
+        </button>
+        <span id="sin-meta" style="font-size:11px;color:#757575"></span>
+        <button onclick="imprimirInforme('sin-out','Sinastría')"
+          style="background:#f3e5f5;color:#6a1b9a;border:1px solid #ce93d8;
+                 padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px">
+          📄 PDF
+        </button>
+      </div>
+      <div id="sin-out">
+        <p style="color:#9e9e9e;font-style:italic;padding:20px 0">
+          Introduce los datos de ambas personas y pulsa Calcular Sinastría.</p>
+      </div>
+    </div>
+
+    <div id="panel-rs" class="panel">
+      <div style="background:#f1f8e9;padding:12px;border-radius:8px;margin-bottom:14px;
+          display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+        <div>
+          <label style="display:block;font-size:11px;color:#616161;margin-bottom:3px">
+            Año de la Revolución Solar</label>
+          <input id="rs_anio" type="number" style="width:100px"
+            placeholder="2026"/>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="calcularRS()"
+            style="background:#1b5e20;color:#fff;border:none;padding:8px 18px;
+                   border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">
+            ☀️ Calcular RS
+          </button>
+          <button onclick="imprimirInforme('rs-kepler','Revolución Solar')"
+            style="background:#f1f8e9;color:#1b5e20;border:1px solid #a5d6a7;
+                   padding:8px 12px;border-radius:6px;cursor:pointer;font-size:12px">
+            📄 PDF
+          </button>
+        </div>
+        <span id="rs-meta" style="font-size:11px;color:#757575"></span>
+      </div>
+      <div id="rs-out">
+        <p style="color:#9e9e9e;font-style:italic;padding:20px 0">
+          Introduce el año y pulsa Calcular RS. Usa la carta natal ya calculada como base.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+window.addEventListener('load', ()=>{
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js');
+  }
+  listarCartas();
+  const hoy = new Date();
+  document.getElementById('t_dia').value  = hoy.getDate();
+  document.getElementById('t_mes').value  = hoy.getMonth()+1;
+  document.getElementById('t_anio').value = hoy.getFullYear();
+  document.getElementById('rs_anio').value = hoy.getFullYear();
+});
+
+let _famososTimer = null;
+function buscarFamosos(q){
+  clearTimeout(_famososTimer);
+  if(q.length < 2){
+    document.getElementById('famosos-lista').innerHTML =
+      '<span style="color:#9e9e9e">Escribe al menos 2 letras.</span>'; return;
+  }
+  _famososTimer = setTimeout(async ()=>{
+    const r = await fetch('/famosos/buscar?q='+encodeURIComponent(q));
+    const d = await r.json();
+    const el = document.getElementById('famosos-lista');
+    if(!d.ok || !d.famosos.length){
+      el.innerHTML='<span style="color:#9e9e9e">Sin resultados.</span>'; return;
+    }
+    el.innerHTML = d.famosos.map(f=>`
+      <div onclick="cargarFamoso(${JSON.stringify(f).replace(/"/g,'&quot;')})"
+        style="padding:5px 6px;border-bottom:1px solid #f3e5f5;cursor:pointer;
+               border-radius:4px;margin:1px 0"
+        onmouseover="this.style.background='#f3e5f5'"
+        onmouseout="this.style.background=''">
+        <span style="color:#6a1b9a;font-weight:600">${f.nombre}</span>
+        <span style="color:#9e9e9e;font-size:10px;margin-left:4px">${f.lugar}</span>
+        <span style="float:right;color:#ab47bc;font-size:10px">${f.anio}</span>
+        ${f.desc ? `<div style="color:#757575;font-size:10px;margin-top:1px">${f.desc}</div>` : ''}
+      </div>`).join('');
+  }, 300);
+}
+
+const _sinTimers = {};
+function buscarFamososSin(prefix, q){
+  clearTimeout(_sinTimers[prefix]);
+  const drop = document.getElementById(prefix+'_fdrop');
+  if(q.length < 2){ drop.style.display='none'; return; }
+  _sinTimers[prefix] = setTimeout(async ()=>{
+    const r = await fetch('/famosos/buscar?q='+encodeURIComponent(q));
+    const d = await r.json();
+    if(!d.ok || !d.famosos.length){ drop.style.display='none'; return; }
+    drop.innerHTML = d.famosos.map(f=>`
+      <div onclick="selFamososSin('${prefix}',${JSON.stringify(f).replace(/"/g,'&quot;')})"
+        style="padding:5px 8px;border-bottom:1px solid #fce4ec;cursor:pointer;font-size:11px"
+        onmouseover="this.style.background='#fce4ec'"
+        onmouseout="this.style.background=''">
+        <b style="color:#880e4f">${f.nombre}</b>
+        <span style="color:#9e9e9e;margin-left:4px">${f.lugar} ${f.anio}</span>
+        ${f.desc?`<span style="color:#bdbdbd;margin-left:4px">${f.desc}</span>`:''}
+      </div>`).join('');
+    drop.style.display='block';
+  }, 300);
+}
+
+function selFamososSin(prefix, f){
+  _rellenarSinastria(prefix, f);
+  document.getElementById(prefix+'_fq').value = f.nombre;
+  document.getElementById(prefix+'_fdrop').style.display='none';
+}
+
+function imprimirInforme(divId, titulo){
+  const contenido = document.getElementById(divId);
+  if(!contenido || !contenido.innerHTML.trim()){
+    alert('No hay informe que exportar. Calcula primero.'); return;
+  }
+  const nombre = document.getElementById('res-nombre')?.textContent || '';
+  const fecha  = document.getElementById('res-fecha')?.textContent  || '';
+  const win = window.open('','_blank','width=900,height=700');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>${titulo} — ${nombre}</title>
+    <style>
+      body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;color:#212121;
+           margin:0;padding:20px 30px;background:#fff}
+      h1{font-size:16px;color:#283593;margin-bottom:4px}
+      .meta{font-size:11px;color:#757575;margin-bottom:20px}
+      @media print{
+        body{padding:10px 20px}
+        button{display:none!important}
+        @page{margin:1.5cm}
+      }
+    </style></head><body>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;
+        margin-bottom:16px;border-bottom:2px solid #e0e0e0;padding-bottom:10px">
+      <div>
+        <h1>☉ KeplerDB — ${titulo}</h1>
+        <div class="meta">${nombre} · ${fecha}</div>
+      </div>
+      <button onclick="window.print()"
+        style="background:#283593;color:#fff;border:none;padding:8px 16px;
+               border-radius:6px;cursor:pointer;font-size:13px">
+        🖨️ Imprimir / PDF
+      </button>
+    </div>
+    ${contenido.innerHTML}
+    </body></html>`);
+  win.document.close();
+  setTimeout(()=> win.print(), 600);
+}
+
+function cargarFamoso(f){
+  document.getElementById('nombre').value  = f.nombre;
+  document.getElementById('dia').value     = f.dia;
+  document.getElementById('mes').value     = f.mes;
+  document.getElementById('anio').value    = f.anio;
+  document.getElementById('hora').value    = f.hora;
+  document.getElementById('min').value     = f.min;
+  document.getElementById('offset').value  = f.gmt;
+  document.getElementById('lat').value     = f.lat;
+  document.getElementById('lon').value     = f.lon;
+  document.getElementById('lugar').value   = f.lugar || '';
+  calcular();
+}
+
+async function listarCartas(){
+  const r = await fetch('/cartas/listar');
+  const d = await r.json();
+  const el = document.getElementById('cartas-lista');
+  if(!d.ok || !d.cartas.length){ el.textContent='Sin cartas guardadas'; return; }
+  el.innerHTML = d.cartas.map(c=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:4px 0;border-bottom:1px solid #f0f0f0">
+      <span style="cursor:pointer;color:#1565c0" onclick="cargarCarta('${c.file}')">
+        📋 ${c.nombre} <span style="color:#9e9e9e;font-size:10px">${c.fecha}</span>
+      </span>
+      <span style="cursor:pointer;color:#c62828;font-size:12px" onclick="borrarCarta('${c.file}')">✕</span>
+    </div>`).join('');
+  // Poblar selects de sinastría
+  const opts = '<option value="">— Cargar carta guardada —</option>' +
+    d.cartas.map(c=>`<option value="${c.file}">${c.nombre} (${c.fecha})</option>`).join('');
+  document.getElementById('s1_carta').innerHTML = opts;
+  document.getElementById('s2_carta').innerHTML = opts;
+}
+
+async function guardarCarta(){
+  if(!window._cartaActual) return;
+  const r = await fetch('/cartas/guardar',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(window._cartaActual)
+  });
+  const d = await r.json();
+  const msg = document.getElementById('save-msg');
+  msg.textContent = d.ok ? '✓ Guardada: '+d.nombre : 'Error: '+d.error;
+  if(d.ok) listarCartas();
+  setTimeout(()=>msg.textContent='', 3000);
+}
+
+async function cargarCarta(nombre){
+  const r = await fetch('/cartas/cargar/'+nombre);
+  const d = await r.json();
+  if(!d.ok){ alert(d.error); return; }
+  const c = d.carta;
+  document.getElementById('nombre').value  = c.nombre||'';
+  document.getElementById('dia').value     = c.dia||'';
+  document.getElementById('mes').value     = c.mes||'';
+  document.getElementById('anio').value    = c.anio||'';
+  document.getElementById('hora').value    = c.hora||'';
+  document.getElementById('min').value     = c.min||'';
+  document.getElementById('offset').value  = c.offset||'';
+  document.getElementById('lat').value     = c.lat||'';
+  document.getElementById('lon').value     = c.lon||'';
+  if(c.lugar) document.getElementById('lugar').value = c.lugar;
+  if(c.sistema) document.getElementById('sistema').value = c.sistema;
+  calcular();
+}
+
+async function borrarCarta(nombre){
+  if(!confirm('¿Borrar carta '+nombre+'?')) return;
+  await fetch('/cartas/borrar/'+nombre,{method:'DELETE'});
+  listarCartas();
+}
+
+function showTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const names=['tabla','aspectos','rueda','kepler','transitos','sinastria','rs'];
+    t.classList.toggle('active', names[i]===name);
+  });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+}
+
+async function calcular(){
+  const btn = document.getElementById('btn-calc');
+  const err = document.getElementById('error-box');
+  btn.disabled=true; btn.textContent='Calculando...';
+  err.style.display='none';
+  document.getElementById('placeholder').style.display='none';
+  document.getElementById('resultado').style.display='none';
+
+  const payload = {
+    nombre: document.getElementById('nombre').value,
+    dia:    document.getElementById('dia').value,
+    mes:    document.getElementById('mes').value,
+    anio:   document.getElementById('anio').value,
+    hora:   document.getElementById('hora').value,
+    min:    document.getElementById('min').value,
+    offset: document.getElementById('offset').value,
+    lat:    document.getElementById('lat').value,
+    lon:    document.getElementById('lon').value,
+    sistema:document.getElementById('sistema').value,
+  };
+
+  try {
+    const r = await fetch('/calcular',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await r.json();
+    if(!data.ok){ err.textContent=data.error; err.style.display='block';
+      btn.disabled=false; btn.textContent='⭐ Calcular Carta Natal'; return; }
+
+    document.getElementById('res-nombre').textContent = data.nombre;
+    document.getElementById('res-fecha').textContent  = data.fecha;
+    document.getElementById('res-asc').textContent    = data.asc;
+    document.getElementById('res-mc').textContent     = data.mc;
+
+    // Tabla planetas
+    const tb = document.getElementById('tabla-body');
+    tb.innerHTML = data.tabla.map(p=>`
+      <tr>
+        <td><span class="glyph" style="color:${p.color}">${p.glyph}</span></td>
+        <td style="font-weight:600">${p.planeta}</td>
+        <td style="font-family:monospace;color:#e6edf3">${p.pos}</td>
+        <td>${p.signo}</td>
+        <td style="color:#8b949e">${p.casa}</td>
+        <td class="retro">${p.retro}</td>
+      </tr>`).join('');
+
+    // Aspectos
+    const ab = document.getElementById('asp-body');
+    ab.innerHTML = data.aspectos.map(a=>`
+      <tr>
+        <td style="font-weight:500">${a.p1}</td>
+        <td><span class="asp-badge" style="background:${a.col}33;color:${a.col}">
+          ${a.asp}</span></td>
+        <td style="font-weight:500">${a.p2}</td>
+        <td style="color:#8b949e;font-size:12px">${a.orb}°</td>
+      </tr>`).join('');
+
+    // Rueda
+    document.getElementById('rueda-img').src = 'data:image/png;base64,'+data.rueda;
+
+    // SVG Data
+    if (data.svg_data) {
+      renderInteractiveWheel(data.svg_data);
+    }
+
+    // Kepler
+    document.getElementById('kepler-out').innerHTML = data.kepler;
+
+    window._cartaActual = {
+      nombre:payload.nombre, fecha:data.fecha,
+      dia:parseInt(payload.dia), mes:parseInt(payload.mes), anio:parseInt(payload.anio),
+      hora:parseInt(payload.hora), min:parseInt(payload.min), offset:parseFloat(payload.offset),
+      lat:parseFloat(payload.lat), lon:parseFloat(payload.lon),
+      lugar:payload.lugar, sistema:payload.sistema
+    };
+    document.getElementById('btn-guardar').style.display='block';
+    document.getElementById('resultado').style.display='block';
+    showTab('tabla');
+  } catch(e){
+    err.textContent = 'Error de red: '+e; err.style.display='block';
+  }
+  btn.disabled=false; btn.textContent='⭐ Calcular Carta Natal';
+}
+
+// Enter para calcular
+document.addEventListener('keydown', e=>{
+  if(e.key==='Enter') calcular();
+});
+
+async function calcularRS(){
+  const c = window._cartaActual;
+  if(!c){ alert('Primero calcula una carta natal.'); return; }
+  const anio_rs = document.getElementById('rs_anio').value;
+  if(!anio_rs){ alert('Introduce el año de la Revolución Solar.'); return; }
+  document.getElementById('rs-out').innerHTML =
+    '<p style="color:#9e9e9e;padding:20px 0">⏳ Calculando RS...</p>';
+  document.getElementById('rs-meta').textContent = '';
+  const payload = {
+    anio_rs: parseInt(anio_rs),
+    anio:c.anio, mes:c.mes, dia:c.dia,
+    hora:c.hora, min:c.min, offset:c.offset,
+    lat:c.lat, lon:c.lon, sistema:c.sistema, nombre:c.nombre
+  };
+  try {
+    const r = await fetch('/revolucion_solar',{method:'POST',
+      headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const data = await r.json();
+    if(!data.ok){
+      document.getElementById('rs-out').innerHTML =
+        `<pre style="color:#c62828;font-size:11px">${data.error}</pre>`; return;
+    }
+    document.getElementById('rs-meta').textContent =
+      `RS ${data.anio_rs} · ${data.fecha_rs}`;
+    document.getElementById('rs-out').innerHTML = `
+      <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;margin-bottom:16px">
+        <img src="data:image/png;base64,${data.rueda}"
+          style="width:100%;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.15)"/>
+        <div id="rs-kepler" style="overflow-y:auto">${data.html}</div>
+      </div>`;
+  } catch(e){
+    document.getElementById('rs-out').innerHTML=`<p style="color:#c62828">Error: ${e}</p>`;
+  }
+}
+
+function cargarNatalEnSinastria(){
+  const c = window._cartaActual;
+  if(!c){ alert('Primero calcula una carta natal.'); return; }
+  _rellenarSinastria('s1', c);
+}
+
+async function cargarCartaEnSinastria(prefix, file){
+  if(!file) return;
+  const r = await fetch('/cartas/cargar/'+file);
+  const d = await r.json();
+  if(!d.ok){ alert(d.error); return; }
+  const c = d.carta;
+  _rellenarSinastria(prefix, c);
+}
+
+function _rellenarSinastria(prefix, c){
+  document.getElementById(prefix+'_nombre').value = c.nombre||'';
+  document.getElementById(prefix+'_dia').value    = c.dia||'';
+  document.getElementById(prefix+'_mes').value    = c.mes||'';
+  document.getElementById(prefix+'_anio').value   = c.anio||'';
+  document.getElementById(prefix+'_hora').value   = c.hora||'';
+  document.getElementById(prefix+'_min').value    = c.min||'';
+  document.getElementById(prefix+'_offset').value = c.offset||'';
+  document.getElementById(prefix+'_lat').value    = c.lat||'';
+  document.getElementById(prefix+'_lon').value    = c.lon||'';
+}
+
+async function calcularSinastria(){
+  const g = id => document.getElementById(id).value;
+  const required = ['s1_dia','s1_mes','s1_anio','s2_dia','s2_mes','s2_anio'];
+  if(required.some(id=>!g(id))){ alert('Faltan datos de fecha en alguna persona.'); return; }
+  document.getElementById('sin-out').innerHTML =
+    '<p style="color:#9e9e9e;padding:20px 0">Calculando...</p>';
+  document.getElementById('sin-meta').textContent = '';
+  const payload = {
+    p1_nombre:g('s1_nombre')||'Persona 1',
+    p1_dia:g('s1_dia'), p1_mes:g('s1_mes'), p1_anio:g('s1_anio'),
+    p1_hora:g('s1_hora')||'12', p1_min:g('s1_min')||'0',
+    p1_offset:g('s1_offset')||'-1',
+    p1_lat:g('s1_lat')||'40.42', p1_lon:g('s1_lon')||'-3.70',
+    p1_sistema:'Regiomontanus',
+    p2_nombre:g('s2_nombre')||'Persona 2',
+    p2_dia:g('s2_dia'), p2_mes:g('s2_mes'), p2_anio:g('s2_anio'),
+    p2_hora:g('s2_hora')||'12', p2_min:g('s2_min')||'0',
+    p2_offset:g('s2_offset')||'-1',
+    p2_lat:g('s2_lat')||'40.42', p2_lon:g('s2_lon')||'-3.70',
+    p2_sistema:'Regiomontanus',
+    orbe: parseInt(g('s_orbe'))||6
+  };
+  try {
+    const r = await fetch('/sinastria',{method:'POST',
+      headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const data = await r.json();
+    if(!data.ok){
+      document.getElementById('sin-out').innerHTML =
+        `<pre style="color:#c62828;font-size:11px">${data.error}</pre>`; return;
+    }
+    document.getElementById('sin-meta').textContent =
+      `${data.nombre1} ↔ ${data.nombre2}`;
+    document.getElementById('sin-out').innerHTML = data.html;
+  } catch(e){
+    document.getElementById('sin-out').innerHTML=`<p style="color:#c62828">Error: ${e}</p>`;
+  }
+}
+
+function renderInteractiveWheel(data) {
+  const container = document.getElementById('svg-container');
+  const size = 600;
+  const cx = size/2;
+  const cy = size/2;
+  const rOuter = size * 0.45;
+  const rSigns = rOuter * 0.85;
+  const rHouses = rSigns * 0.8;
+  const rPlanets = rHouses * 0.9;
+  const asc = data.asc;
+
+  const getPos = (lon, r) => {
+    // Rotar para que ASC esté a la izquierda (180 grados)
+    const angle = (180 + (lon - asc)) * Math.PI / 180;
+    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+  };
+
+  const SIGN_NAMES = ['Aries','Tauro','Géminis','Cáncer','Leo','Virgo','Libra','Escorpio','Sagitario','Capricornio','Acuario','Piscis'];
+  const SIGN_GLYPHS = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+  const ELEM_COLORS = ['#fff0f0','#f0fff0','#f0f0ff','#f5f0ff'];
+
+  let svg = `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="background:#fff;border-radius:50%">`;
+  
+  // Fondo de Signos
+  for (let i = 0; i < 12; i++) {
+    const start = (180 + (i * 30 - asc)) * Math.PI / 180;
+    const end = (180 + ((i + 1) * 30 - asc)) * Math.PI / 180;
+    const x1 = cx + rOuter * Math.cos(start), y1 = cy + rOuter * Math.sin(start);
+    const x2 = cx + rOuter * Math.cos(end), y2 = cy + rOuter * Math.sin(end);
+    const x3 = cx + rSigns * Math.cos(end), y3 = cy + rSigns * Math.sin(end);
+    const x4 = cx + rSigns * Math.cos(start), y4 = cy + rSigns * Math.sin(start);
+    
+    svg += `<path d="M ${x1} ${y1} A ${rOuter} ${rOuter} 0 0 1 ${x2} ${y2} L ${x3} ${y3} A ${rSigns} ${rSigns} 0 0 0 ${x4} ${y4} Z" 
+                 fill="${ELEM_COLORS[i%4]}" stroke="#e0e0e0" stroke-width="0.5"/>`;
+    
+    // Glifo
+    const midPos = getPos(i * 30 + 15, (rOuter + rSigns)/2);
+    svg += `<text x="${midPos.x}" y="${midPos.y}" text-anchor="middle" dominant-baseline="central" 
+                  style="font-size:16px;fill:#283593;font-weight:bold">${SIGN_GLYPHS[i]}</text>`;
+  }
+
+  // Líneas de Casas
+  data.cusps.forEach((c, i) => {
+    const p1 = getPos(c, rSigns);
+    const p2 = getPos(c, rSigns * 0.4);
+    const isAngular = (i % 3 === 0);
+    svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" 
+                 stroke="${isAngular ? '#283593' : '#9e9e9e'}" stroke-width="${isAngular ? 1.5 : 0.5}"/>`;
+    
+    // Número de casa
+    const midHouse = (c + data.cusps[(i+1)%12]) / 2 + (c > data.cusps[(i+1)%12] ? 180 : 0);
+    const pLabel = getPos(midHouse, rSigns * 0.5);
+    svg += `<text x="${pLabel.x}" y="${pLabel.y}" text-anchor="middle" dominant-baseline="central" 
+                  style="font-size:10px;fill:#757575">${i+1}</text>`;
+  });
+
+  // Círculos concéntricos
+  svg += `<circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="none" stroke="#283593" stroke-width="2"/>`;
+  svg += `<circle cx="${cx}" cy="${cy}" r="${rSigns}" fill="none" stroke="#283593" stroke-width="1"/>`;
+  svg += `<circle cx="${cx}" cy="${cy}" r="${rSigns * 0.4}" fill="none" stroke="#283593" stroke-width="0.5"/>`;
+
+  // Planetas
+  data.planets.forEach(p => {
+    const pos = getPos(p.lon, rPlanets);
+    svg += `<g class="planet-glyph" style="cursor:pointer">
+              <title>${p.name}: ${Math.floor(p.lon%30)}° ${SIGN_NAMES[Math.floor(p.lon/30)]}</title>
+              <circle cx="${pos.x}" cy="${pos.y}" r="12" fill="white" stroke="${p.color}" stroke-width="1" opacity="0.8"/>
+              <text x="${pos.x}" y="${pos.y}" text-anchor="middle" dominant-baseline="central" 
+                    style="font-size:14px;fill:${p.color};font-weight:bold">${p.glyph}</text>
+            </g>`;
+  });
+
+  svg += `</svg>`;
+  container.innerHTML = svg;
+}
+
+async function pedirResumenGemini() {
+  const box = document.getElementById('gemini-resumen-box');
+  const btn = event.target;
+  const originalText = btn.textContent;
+  
+  btn.textContent = '⏳ Sintetizando...';
+  btn.disabled = true;
+
+  try {
+    const payload = {
+      tabla: Array.from(document.querySelectorAll('#tabla-body tr')).map(tr => {
+        const tds = tr.querySelectorAll('td');
+        return {
+          planeta: tds[1].textContent,
+          signo: tds[3].textContent,
+          casa: tds[4].textContent
+        };
+      }),
+      asc: document.getElementById('res-asc').textContent,
+      mc: document.getElementById('res-mc').textContent
+    };
+    
+    const r = await fetch('/gemini/resumen', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    
+    if (d.ok) {
+      box.innerHTML = `<div style="background:linear-gradient(135deg, #f3e5f5, #e8f5e9);
+          border:2px solid #4a148c;border-radius:12px;padding:20px;
+          box-shadow:0 4px 15px rgba(0,0,0,0.1);animation:fadeIn 1s ease">
+          ${d.resumen}
+          <div style="text-align:right;margin-top:10px">
+            <small style="color:#7b1fa2;font-style:italic">— Con amor, Gemini ✨</small>
+          </div>
+        </div>`;
+      box.style.display = 'block';
+      box.scrollIntoView({ behavior: 'smooth' });
+    }
+  } catch(e) {
+    console.error(e);
+  } finally {
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+}
+
+async function modernizarConGemini(btn) {
+  const container = btn.closest('div').parentElement;
+  const txtEl = container.querySelector('.txt-original');
+  if (!txtEl) return;
+  
+  // Evitar duplicados
+  if (container.querySelector('.gemini-res')) return;
+
+  const originalHtml = btn.innerHTML;
+  btn.innerHTML = '<span class="loading-sparkle">✨</span>';
+  btn.style.pointerEvents = 'none';
+
+  try {
+    const r = await fetch('/gemini/modernizar', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ texto: txtEl.textContent })
+    });
+    const d = await r.json();
+    
+    if (d.ok) {
+      const resDiv = document.createElement('div');
+      resDiv.className = 'gemini-res';
+      resDiv.innerHTML = d.modernizado;
+      container.appendChild(resDiv);
+      btn.style.display = 'none'; // Ocultar tras éxito
+    } else {
+      console.error(d.error);
+      btn.innerHTML = '❌';
+    }
+  } catch(e) {
+    console.error(e);
+    btn.innerHTML = '❌';
+  } finally {
+    btn.style.pointerEvents = 'auto';
+  }
+}
+
+async function calcularTransitos(){
+  if(!window._cartaActual){
+    alert('Primero calcula una carta natal.'); return;
+  }
+  const c = window._cartaActual;
+  const t_dia  = document.getElementById('t_dia').value;
+  const t_mes  = document.getElementById('t_mes').value;
+  const t_anio = document.getElementById('t_anio').value;
+  const t_hora = document.getElementById('t_hora').value || '12';
+  const t_min  = document.getElementById('t_min').value  || '0';
+  if(!t_dia || !t_mes || !t_anio){
+    alert('Introduce la fecha de tránsito completa.'); return;
+  }
+  document.getElementById('trans-out').innerHTML =
+    '<p style="color:#9e9e9e;padding:20px 0">Calculando...</p>';
+  document.getElementById('trans-meta').textContent = '';
+  const payload = {
+    t_dia, t_mes, t_anio, t_hora, t_min,
+    anio:c.anio, mes:c.mes, dia:c.dia,
+    hora:c.hora, min:c.min, offset:c.offset,
+    lat:c.lat, lon:c.lon, sistema:c.sistema
+  };
+  try {
+    const r = await fetch('/transitos',{method:'POST',
+      headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const data = await r.json();
+    if(!data.ok){
+      document.getElementById('trans-out').innerHTML =
+        `<pre style="color:#c62828;font-size:11px">${data.error}</pre>`; return;
+    }
+    document.getElementById('trans-meta').textContent =
+      `${data.fecha_trans} · ${data.n_total} aspectos · ${data.n_texto} con texto Kepler`;
+    if(!data.aspectos.length){
+      document.getElementById('trans-out').innerHTML =
+        '<p style="color:#9e9e9e;font-style:italic;padding:20px 0">Sin aspectos activos.</p>';
+      return;
+    }
+    const ASP_ICONS={'Conjunción':'☌','Sextil':'⚹','Cuadratura':'□','Trígono':'△','Oposición':'☍'};
+    const html = data.aspectos.map(a=>{
+      const icon = ASP_ICONS[a.asp]||'·';
+      const txtBloque = a.texto ? `<div style="font-size:12px;color:#424242;line-height:1.6;
+          margin-top:6px;border-top:1px solid rgba(0,0,0,.06);padding-top:6px">${a.texto}</div>`:
+        `<span style="font-size:10px;color:#bdbdbd;margin-left:6px">sin texto en DB</span>`;
+      return `<div style="background:${a.bg};border-left:4px solid ${a.col};
+          padding:9px 14px;margin:4px 0;border-radius:0 6px 6px 0;${!a.texto?'opacity:0.65':''}">
+        <div style="font-size:12px;font-weight:700;color:${a.col}">
+          <span style="font-size:15px">${icon}</span>
+          <span style="margin:0 4px">${a.trans}${a.retro}</span>
+          <span style="font-weight:400"> ${a.asp} </span>
+          <span style="color:#1a237e;margin:0 4px">${a.natal}</span>
+          <span style="font-size:11px;font-weight:400;color:#9e9e9e">(orbe ${a.orb}°)</span>
+        </div>${txtBloque}</div>`;
+    }).join('');
+    document.getElementById('trans-out').innerHTML =
+      `<div style="background:#e3f2fd;border:1px solid #1565c0;border-radius:6px;
+          padding:8px 14px;margin-bottom:12px;font-size:12px;color:#0d47a1">
+        Tránsitos <b>${data.fecha_trans}</b> sobre carta natal de <b>${c.nombre}</b>
+        &nbsp;·&nbsp; Orbes: Luminarias ≤1-2°, Superiores ≤3°
+      </div>${html}`;
+  } catch(e){
+    document.getElementById('trans-out').innerHTML=`<p style="color:#c62828">Error: ${e}</p>`;
+  }
+}
+</script>
+</body>
+</html>
