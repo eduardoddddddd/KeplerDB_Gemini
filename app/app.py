@@ -514,6 +514,23 @@ def borrar_carta(nombre):
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)})
 
+@app.route('/gemini/informe_profundo', methods=['POST'])
+def gemini_informe_profundo():
+    try:
+        data = request.json
+        textos_kepler = data.get('textos', '')
+        datos_carta = {
+            'nombre': data.get('nombre'),
+            'sol': data.get('sol'),
+            'luna': data.get('luna'),
+            'asc': data.get('asc'),
+            'mc': data.get('mc')
+        }
+        informe = ge.engine.generar_informe_profundo(datos_carta, textos_kepler)
+        return jsonify({'ok': True, 'informe': informe})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)})
+
 @app.route('/gemini/resumen', methods=['POST'])
 def gemini_resumen():
     try:

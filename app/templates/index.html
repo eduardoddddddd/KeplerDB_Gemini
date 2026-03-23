@@ -148,6 +148,7 @@ tr:hover td{background:#fafafa}
       <div class="tab" onclick="showTab('transitos')">🌍 Tránsitos</div>
       <div class="tab" onclick="showTab('sinastria')">💞 Sinastría</div>
       <div class="tab" onclick="showTab('rs')">☀️ Rev. Solar</div>
+      <div class="tab" onclick="showTab('ia')" style="color:#4a148c;font-weight:700">✨ Interpretación IA</div>
     </div>
 
     <div id="panel-tabla" class="panel active">
@@ -358,6 +359,19 @@ tr:hover td{background:#fafafa}
           Introduce el año y pulsa Calcular RS. Usa la carta natal ya calculada como base.</p>
       </div>
     </div>
+
+    <div id="panel-ia" class="panel">
+      <div style="background:linear-gradient(135deg, #f3e5f5, #e8eaf6); padding:20px; border-radius:12px; border:1px solid #ce93d8; margin-bottom:20px; text-align:center">
+        <h3 style="color:#4a148c;margin-bottom:10px">🤖 Analista Astrológico Gemini 1.5</h3>
+        <p style="color:#616161;font-size:13px;margin-bottom:15px">Gemini procesará todos los textos de Kepler 4 y realizará una síntesis evolutiva completa.</p>
+        <button onclick="generarInformeIA()" id="btn-ia" 
+          style="background: #4a148c; color: #fff; border:none; padding:12px 24px; border-radius:30px; cursor:pointer; font-weight:700; box-shadow:0 4px 12px rgba(74,20,140,0.3)">
+          🚀 Generar Análisis Profundo
+        </button>
+      </div>
+      <div id="ia-out" style="font-size:14px; line-height:1.7; color:#212121; padding:10px; border:1px solid #eee; border-radius:8px; display:none">
+      </div>
+    </div>
   </div>
 </div>
 </div>
@@ -544,11 +558,59 @@ async function borrarCarta(nombre){
 
 function showTab(name){
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    const names=['tabla','aspectos','rueda','kepler','transitos','sinastria','rs'];
+    const names=['tabla','aspectos','rueda','kepler','transitos','sinastria','rs', 'ia'];
     t.classList.toggle('active', names[i]===name);
   });
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+name).classList.add('active');
+}
+
+async function generarInformeIA() {
+  const out = document.getElementById('ia-out');
+  const btn = document.getElementById('btn-ia');
+  
+  if (!window._cartaActual) { alert('Calcula primero una carta natal.'); return; }
+
+  btn.textContent = '🧠 Gemini está analizando...';
+  btn.disabled = true;
+  out.innerHTML = '<div style="text-align:center;padding:40px"><span class="loading-sparkle" style="font-size:30px">✨</span><br><br>Procesando todos los textos de Kepler...</div>';
+  out.style.display = 'block';
+
+  try {
+    // Recolectar todos los textos del informe kepler actual
+    const keplerTexts = Array.from(document.querySelectorAll('#kepler-out .txt-original'))
+                             .map(el => el.textContent).join("\n\n");
+    
+    const payload = {
+      nombre: window._cartaActual.nombre,
+      sol: document.querySelector('#tabla-body tr:nth-child(1) td:nth-child(4)')?.textContent || '',
+      luna: document.querySelector('#tabla-body tr:nth-child(2) td:nth-child(4)')?.textContent || '',
+      asc: document.getElementById('res-asc').textContent,
+      mc: document.getElementById('res-mc').textContent,
+      textos: keplerTexts
+    };
+
+    const r = await fetch('/gemini/informe_profundo', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    
+    if (d.ok) {
+      // Usar marked si estuviera disponible, si no, texto plano/formateado
+      out.innerHTML = `<div class="gemini-res" style="font-size:15px; color:#333">
+          ${d.informe.replace(/\n/g, '<br>')}
+        </div>`;
+    } else {
+      out.innerHTML = `<div style="color:red">${d.error}</div>`;
+    }
+  } catch(e) {
+    out.innerHTML = `<div style="color:red">Error de red: ${e}</div>`;
+  } finally {
+    btn.textContent = '🚀 Generar Análisis Profundo';
+    btn.disabled = false;
+  }
 }
 
 async function calcular(){
