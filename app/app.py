@@ -535,6 +535,6 @@ def gemini_modernizar():
 
 if __name__ == '__main__':
     import webbrowser, threading
-    threading.Timer(1.2, lambda: webbrowser.open('http://localhost:5000')).start()
-    print('KeplerDB App → http://localhost:5000')
-    app.run(debug=False, port=5000)
+    threading.Timer(1.2, lambda: webbrowser.open('http://localhost:7860')).start()
+    print('KeplerDB App → http://localhost:7860')
+    app.run(debug=False, port=7860)
