@@ -1,3 +1,12 @@
+---
+title: KeplerDB Gemini Edition
+emoji: 🔭
+colorFrom: indigo
+colorTo: purple
+sdk: docker
+app_port: 5000
+---
+
 # KeplerDB 🔭
 
 Aplicación web local que reproduce las interpretaciones astrológicas del programa **Kepler 4** (Miguel García, 1985) sobre cálculos astronómicos precisos con **pyswisseph** (Swiss Ephemeris).
