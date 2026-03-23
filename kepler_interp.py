@@ -5,9 +5,11 @@
 #   planets_spd  = {nombre: spd_float}
 #   cusps        = [lon1..lon12]
 # =============================================================================
-import sqlite3, re
+import sqlite3, re, os
 
-DB_PATH = r"C:\Users\Edu\Documents\ClaudeWork\KeplerDB\kepler.db"
+# Ruta dinámica para que funcione tanto local como en la nube (Docker)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "kepler.db")
 
 PLANET_MAP = {
     'Sol':'Sol','Luna':'Luna','Mercurio':'Mercurio','Venus':'Venus',
