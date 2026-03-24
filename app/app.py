@@ -550,6 +550,38 @@ def gemini_modernizar():
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)})
 
+@app.route('/geo/buscar')
+def geo_buscar():
+    q = request.args.get('q', '').strip()
+    if len(q) < 3: return jsonify([])
+    
+    results = []
+    try:
+        # 1. Búsqueda Local (DB Kepler)
+        import sqlite3 as _sq
+        conn = _sq.connect(ki.DB_PATH); cur = conn.cursor()
+        cur.execute("SELECT DISTINCT lugar, lat, lon, gmt FROM cartas WHERE lugar LIKE ? LIMIT 5", (f'%{q}%',))
+        for r in cur.fetchall():
+            results.append({'nombre': f"🏠 {r[0]}", 'lat': r[1], 'lon': r[2], 'gmt': r[3]})
+        conn.close()
+
+        # 2. Búsqueda Global (Nominatim - Solo si hay pocos locales)
+        if len(results) < 5:
+            import requests
+            headers = {'User-Agent': 'KeplerDB_Gemini_App'}
+            url = f"https://nominatim.openstreetmap.org/search?q={q}&format=json&addressdetails=1&limit=5"
+            r_osm = requests.get(url, headers=headers, timeout=3)
+            if r_osm.status_code == 200:
+                for item in r_osm.json():
+                    results.append({
+                        'nombre': f"🌍 {item['display_name']}",
+                        'lat': float(item['lat']),
+                        'lon': float(item['lon']),
+                        'gmt': 0 # El offset requiere API extra, lo dejamos a 0 o manual
+                    })
+    except: pass
+    return jsonify(results)
+
 if __name__ == '__main__':
     import webbrowser, threading
     threading.Timer(1.2, lambda: webbrowser.open('http://localhost:7860')).start()

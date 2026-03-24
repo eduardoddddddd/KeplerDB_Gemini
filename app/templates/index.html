@@ -95,7 +95,12 @@ tr:hover td{background:#fafafa}
   <label>Longitud (+ Este)</label>
   <input id="lon" type="number" value="-3.70" step="0.01"/>
   <label>Lugar (referencia)</label>
-  <input id="lugar" type="text" value="Madrid, España"/>
+  <div style="position:relative">
+    <input id="lugar" type="text" value="Madrid, España" oninput="buscarGeo(this.value)"/>
+    <div id="geo-results" style="display:none;position:absolute;z-index:100;width:100%;
+        background:#fff;border:1px solid #ddd;border-radius:0 0 6px 6px;
+        max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
+  </div>
 
   <label>Sistema de casas</label>
   <select id="sistema">
@@ -567,6 +572,38 @@ function borrarCarta(nombre){
   delete cartas[nombre];
   localStorage.setItem('kepler_cartas', JSON.stringify(cartas));
   listarCartas();
+}
+
+let _geoTimer = null;
+async function buscarGeo(q) {
+  const drop = document.getElementById('geo-results');
+  clearTimeout(_geoTimer);
+  if (q.length < 3) { drop.style.display = 'none'; return; }
+
+  _geoTimer = setTimeout(async () => {
+    const r = await fetch('/geo/buscar?q=' + encodeURIComponent(q));
+    const data = await r.json();
+    if (!data.length) { drop.style.display = 'none'; return; }
+
+    drop.innerHTML = data.map(g => `
+      <div onclick="seleccionarGeo(${JSON.stringify(g).replace(/"/g, '&quot;')})"
+        style="padding:8px 12px; border-bottom:1px solid #eee; cursor:pointer; font-size:13px"
+        onmouseover="this.style.background='#f0f2f5'"
+        onmouseout="this.style.background='#fff'">
+        ${g.nombre}
+      </div>`).join('');
+    drop.style.display = 'block';
+  }, 400);
+}
+
+function seleccionarGeo(g) {
+  document.getElementById('lugar').value = g.nombre.replace(/^[🏠🌍]\s*/, '');
+  document.getElementById('lat').value = g.lat;
+  document.getElementById('lon').value = g.lon;
+  if (g.gmt !== undefined && g.gmt !== 0) {
+    document.getElementById('offset').value = g.gmt;
+  }
+  document.getElementById('geo-results').style.display = 'none';
 }
 
 function showTab(name){
