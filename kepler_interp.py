@@ -217,13 +217,19 @@ def get_transito(p_trans, p_natal, asp_dash):
     p1 = PLANET_MAP.get(p_trans, p_trans); p2 = PLANET_MAP.get(p_natal, p_natal)
     asp = ASPECT_MAP.get(asp_dash, asp_dash)
     conn = _conn(); cur = conn.cursor()
-    # Prioridad 1: Texto específico de Tránsitos (Kepler 7.0)
+    # Prioridad 1: Texto específico de Tránsitos Kepler 4 (PLAN4.TRT)
     cur.execute("""SELECT cabecera, texto FROM interpretaciones 
-                   WHERE fichero='Trint1.tcs' AND planeta1=? AND planeta2=? AND aspecto=? 
+                   WHERE fichero='PLAN4.TRT' AND planeta1=? AND planeta2=? AND aspecto=? 
                    LIMIT 1""", (p1, p2, asp))
     row = cur.fetchone()
     if not row:
-        # Prioridad 2: Texto de aspectos natales (Kepler 4)
+        # Prioridad 2: Kepler 7.0 (Trint1.tcs)
+        cur.execute("""SELECT cabecera, texto FROM interpretaciones 
+                       WHERE fichero='Trint1.tcs' AND planeta1=? AND planeta2=? AND aspecto=? 
+                       LIMIT 1""", (p1, p2, asp))
+        row = cur.fetchone()
+    if not row:
+        # Prioridad 3: Texto de aspectos natales (Kepler 4)
         cur.execute("""SELECT cabecera, texto FROM interpretaciones 
                        WHERE fichero='ASPECTOS.ASC' AND aspecto=? 
                        AND ((planeta1=? AND planeta2=?) OR (planeta1=? AND planeta2=?)) 
