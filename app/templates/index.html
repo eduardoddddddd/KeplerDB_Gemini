@@ -758,12 +758,13 @@ function cargarNatalEnSinastria(){
   _rellenarSinastria('s1', c);
 }
 
-async function cargarCartaEnSinastria(prefix, file){
-  if(!file) return;
-  const r = await fetch('/cartas/cargar/'+file);
-  const d = await r.json();
-  if(!d.ok){ alert(d.error); return; }
-  const c = d.carta;
+function cargarCartaEnSinastria(prefix, nombre){
+  if(!nombre) return;
+  const raw = localStorage.getItem('kepler_cartas');
+  if(!raw) return;
+  const cartas = JSON.parse(raw);
+  const c = cartas[nombre];
+  if(!c){ alert('Carta no encontrada'); return; }
   _rellenarSinastria(prefix, c);
 }
 
@@ -1003,44 +1004,22 @@ async function calcularTransitos(){
     lat:c.lat, lon:c.lon, sistema:c.sistema
   };
   try {
-    const r = await fetch('/transitos',{method:'POST',
-      headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const r = await fetch('/transitos', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
     const data = await r.json();
-    if(!data.ok){
+    if (!data.ok) {
       document.getElementById('trans-out').innerHTML =
         `<pre style="color:#c62828;font-size:11px">${data.error}</pre>`; return;
     }
     document.getElementById('trans-meta').textContent =
-      `${data.fecha_trans} · ${data.n_total} aspectos · ${data.n_texto} con texto Kepler`;
-    if(!data.aspectos.length){
-      document.getElementById('trans-out').innerHTML =
-        '<p style="color:#9e9e9e;font-style:italic;padding:20px 0">Sin aspectos activos.</p>';
-      return;
-    }
-    const ASP_ICONS={'Conjunción':'☌','Sextil':'⚹','Cuadratura':'□','Trígono':'△','Oposición':'☍'};
-    const html = data.aspectos.map(a=>{
-      const icon = ASP_ICONS[a.asp]||'·';
-      const txtBloque = a.texto ? `<div style="font-size:12px;color:#424242;line-height:1.6;
-          margin-top:6px;border-top:1px solid rgba(0,0,0,.06);padding-top:6px">${a.texto}</div>`:
-        `<span style="font-size:10px;color:#bdbdbd;margin-left:6px">sin texto en DB</span>`;
-      return `<div style="background:${a.bg};border-left:4px solid ${a.col};
-          padding:9px 14px;margin:4px 0;border-radius:0 6px 6px 0;${!a.texto?'opacity:0.65':''}">
-        <div style="font-size:12px;font-weight:700;color:${a.col}">
-          <span style="font-size:15px">${icon}</span>
-          <span style="margin:0 4px">${a.trans}${a.retro}</span>
-          <span style="font-weight:400"> ${a.asp} </span>
-          <span style="color:#1a237e;margin:0 4px">${a.natal}</span>
-          <span style="font-size:11px;font-weight:400;color:#9e9e9e">(orbe ${a.orb}°)</span>
-        </div>${txtBloque}</div>`;
-    }).join('');
-    document.getElementById('trans-out').innerHTML =
-      `<div style="background:#e3f2fd;border:1px solid #1565c0;border-radius:6px;
-          padding:8px 14px;margin-bottom:12px;font-size:12px;color:#0d47a1">
-        Tránsitos <b>${data.fecha_trans}</b> sobre carta natal de <b>${c.nombre}</b>
-        &nbsp;·&nbsp; Orbes: Luminarias ≤1-2°, Superiores ≤3°
-      </div>${html}`;
-  } catch(e){
-    document.getElementById('trans-out').innerHTML=`<p style="color:#c62828">Error: ${e}</p>`;
+      `${data.fecha_trans} · ${data.n_total} aspectos detectados`;
+    
+    document.getElementById('trans-out').innerHTML = data.html;
+  } catch(e) {
+    document.getElementById('trans-out').innerHTML = `<p style="color:#c62828">Error: ${e}</p>`;
   }
 }
 </script>

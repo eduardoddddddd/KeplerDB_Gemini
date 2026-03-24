@@ -331,12 +331,12 @@ def transitos():
                     'texto': row[1] if row else None,
                 })
 
-        aspectos.sort(key=lambda x: (0 if x['texto'] else 1, x['orb']))
         fecha_str = f'{DT:02d}/{MT:02d}/{YT}'
-        return jsonify({'ok': True, 'aspectos': aspectos,
+        html_transitos = ki.generar_informe_transitos(natal_lons, planets_trans, fecha_str)
+        
+        return jsonify({'ok': True, 'html': html_transitos,
                         'fecha_trans': fecha_str,
-                        'n_total': len(aspectos),
-                        'n_texto': sum(1 for a in aspectos if a['texto'])})
+                        'n_total': len(aspectos)})
     except Exception as e:
         import traceback
         return jsonify({'ok': False, 'error': traceback.format_exc()})
