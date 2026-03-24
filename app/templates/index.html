@@ -61,7 +61,10 @@ tr:hover td{background:#fafafa}
 <body>
 <div class="app">
 <div class="sidebar">
-  <h1>☉ KeplerDB</h1>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px">
+    <h1>☉ KeplerDB</h1>
+    <span onclick="nuevaCarta()" style="font-size:11px; color:#1565c0; cursor:pointer; text-decoration:underline">Nueva Carta</span>
+  </div>
   <div style="font-size:11px;color:#484f58;margin-bottom:12px">
     Kepler 4 · Miguel García · 743 textos</div>
 
@@ -663,13 +666,45 @@ async function generarInformeIA() {
   }
 }
 
+function nuevaCarta() {
+  if (!confirm('¿Deseas vaciar todos los campos para una nueva carta?')) return;
+  document.getElementById('nombre').value = '';
+  document.getElementById('dia').value = '';
+  document.getElementById('mes').value = '';
+  document.getElementById('anio').value = '';
+  document.getElementById('hora').value = '12';
+  document.getElementById('min').value = '0';
+  document.getElementById('offset').value = '0';
+  document.getElementById('lat').value = '';
+  document.getElementById('lon').value = '';
+  document.getElementById('lugar').value = '';
+  limpiarResultados();
+}
+
+function limpiarResultados() {
+  document.getElementById('placeholder').style.display = 'block';
+  document.getElementById('resultado').style.display = 'none';
+  document.getElementById('kepler-out').innerHTML = '';
+  document.getElementById('ia-out').innerHTML = '';
+  document.getElementById('ia-out').style.display = 'none';
+  document.getElementById('gemini-resumen-box').innerHTML = '';
+  document.getElementById('gemini-resumen-box').style.display = 'none';
+  document.getElementById('svg-container').innerHTML = '';
+  document.getElementById('rueda-img').src = '';
+  window._cartaActual = null;
+}
+
 async function calcular(){
   const btn = document.getElementById('btn-calc');
   const err = document.getElementById('error-box');
+  
+  // Limpieza inicial
+  err.style.display = 'none';
+  document.getElementById('kepler-out').innerHTML = '';
+  document.getElementById('ia-out').innerHTML = '';
+  document.getElementById('gemini-resumen-box').style.display = 'none';
+
   btn.disabled=true; btn.textContent='Calculando...';
-  err.style.display='none';
-  document.getElementById('placeholder').style.display='none';
-  document.getElementById('resultado').style.display='none';
 
   const payload = {
     nombre: document.getElementById('nombre').value,
